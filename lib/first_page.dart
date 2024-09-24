@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
   runApp(FirstPage());
@@ -64,11 +66,33 @@ class _InputFormState extends State<InputForm> {
     });
   }
 
-  void _onConfirm() {
+  void _onConfirm() async {
     for (int i = 0; i < _inputValues.length; i++) {
       _inputValues[i] = _controllers[i].text.isNotEmpty ? _controllers[i].text : _inputValues[i];
     }
-    print('입력값: $_inputValues');
+
+    // API 호출
+    final response = await http.post(
+      Uri.parse('http://127.0.0.1:5000/recommend'), // 서버 주소와 포트
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode({
+        'age': _inputValues[0],
+        'gender': _inputValues[1],
+        'travel_styles': _inputValues.sublist(2, 10), // 여행 스타일 1~8
+        'budget': _inputValues[10],
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      // 성공적으로 응답을 받음
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      print('추천 결과: $responseData');
+    } else {
+      // 오류 처리
+      print('추천 요청 실패');
+    }
   }
 
   @override
@@ -125,6 +149,9 @@ class _InputFormState extends State<InputForm> {
             decoration: InputDecoration(
               border: OutlineInputBorder(),
               hintText: _hintTexts[index],
+              hintStyle: TextStyle(
+                color: Colors.grey,
+              )
             ),
             onChanged: (value) => _updateInputValue(index),
           ),
